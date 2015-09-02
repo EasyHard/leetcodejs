@@ -20,22 +20,33 @@ function buildTrie(words) {
   return trie;
 }
 
-function dfs(s, idx, node, prefix, word) {
+function getNext(s, idx, node, next) {
+  if (!node) return next;
   if (node.children['$']) {
-    prefix.push(word);
-    dfs(s, idx, trie, prefix, '');
-    prefix.pop();
+    next.push(idx);
   }
   if (idx === s.length) {
-    if (node === trie) {
-      ans.push(prefix.join(' '));
-    }
-    return ;
+    return next;
   }
-  if (node.children[s[idx]]) {
-    dfs(s, idx+1, node.children[s[idx]], prefix, word+s[idx]);
-  }
+  return getNext(s, idx+1, node.children[s[idx]], next);
 }
+
+function dfs(s, jumpto, curr, result, ans, path) {
+  if (curr === s.length) {
+    ans.push(path.join(' '));
+    return true;
+  }
+  if (result[curr] === false) return false;
+  var p = false;
+  jumpto[curr].forEach(next => {
+    path.push(s.substring(curr, next));
+    p = p || dfs(s, jumpto, next, result, ans, path);
+    path.pop();
+  });
+  if (result[curr] === undefined)
+    result[curr] = p;
+}
+
 /**
  * @param {string} s
  * @param {set<string>} wordDict
@@ -44,8 +55,13 @@ function dfs(s, idx, node, prefix, word) {
 var ans, trie;
 var wordBreak = function(s, wordDict) {
   trie = buildTrie(wordDict);
+  var jumpto = [];
+  for (var i = 0; i < s.length; i++) {
+    var next = [];
+    jumpto.push(getNext(s, i, trie, next));
+  }
   ans = [];
-  dfs(s, 0, trie, [], '');
+  dfs(s, jumpto, 0, [], ans, []);
   return ans;
 };
 
