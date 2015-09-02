@@ -1,31 +1,5 @@
 var DEBUG = process.env.DEBUG;
 
-var g = {};
-var ans = [];
-var path = [];
-var depth = 1;
-var START, END, visited;
-function constructGraph(dict) {
-  g = {};
-  dict.forEach(function (word) {
-    g[word] = {};
-  });
-  dict.forEach(function (word) {
-    var sword = word.split('');
-    for (var j = 0; j < word.length; j++) {
-      for (var k = 'a'.charCodeAt(0); k <= 'z'.charCodeAt(0); k++) {
-        var tmp = sword[j];
-        sword[j] = String.fromCharCode(k);
-        var newword = sword.join('');
-        if (newword in g && newword !== word) {
-          g[word][newword] = true;
-        }
-        sword[j] = tmp;
-      }
-    }
-  });
-}
-
 function getPaths(state, curr, path, paths) {
   path.unshift(curr);
   if (state[curr].p === null) {
@@ -43,10 +17,9 @@ function getPaths(state, curr, path, paths) {
  * @return {string[][]}
  */
 var findLadders = function(start, end, dict) {
-  START = start, END = end;
   dict.add(start);
   dict.add(end);
-  constructGraph(dict);
+//  constructGraph(dict);
   var state = {};
   // bfs
   var queue = [];
@@ -58,21 +31,32 @@ var findLadders = function(start, end, dict) {
 
   while (queue.length) {
     var curr = queue.shift();
-    for (var next in g[curr]) {
-      if (!state[next]) {
-        queue.push(next);
-        state[next] = {
-          depth: state[curr].depth + 1,
-          p: [curr]
-        };
-      } else {
-        if (state[next].depth === state[curr].depth + 1)
-          state[next].p.push(curr);
+    var sword = curr.split('');
+    for (var j = 0; j < curr.length; j++) {
+      for (var k = 'a'.charCodeAt(0); k <= 'z'.charCodeAt(0); k++) {
+        var tmp = sword[j];
+        sword[j] = String.fromCharCode(k);
+        var newword = sword.join('');
+        if (dict.has(newword) && newword !== curr) {
+          var next = newword;
+          if (!state[next]) {
+            queue.push(next);
+            state[next] = {
+              depth: state[curr].depth + 1,
+              p: [curr]
+            };
+          } else {
+            if (state[next].depth === state[curr].depth + 1)
+              state[next].p.push(curr);
+          }
+        }
+        sword[j] = tmp;
       }
-    };
+    }
   }
+
   if (!state[end]) return [];
-  ans = [];
+  var ans = [];
   getPaths(state, end, [], ans);
   return ans;
 };
