@@ -1,16 +1,62 @@
 var DEBUG = process.env.DEBUG;
-var M = 1572869;
-var M1 = 100663319;
 
-String.prototype.hash = function () {
-  var result = 0;
-  for (var i = 0; i < this.length; i++) {
-    result *= 26;
-    result += this.charCodeAt(i);
-    result %= M;
+function MultiSet(elements) {
+  this.h = {};
+  this.size = 0;
+  elements = elements || [];
+  elements.forEach(ele => {
+    this.add(ele);
+  }, this);
+}
+
+MultiSet.prototype.add = function(element) {
+  this.h[element] = this.h[element] || 0;
+  this.size += 1;
+  this.h[element] += 1;
+};
+
+MultiSet.prototype.has = function (element) {
+  return this.h[element] || 0;
+};
+
+MultiSet.prototype.delete = function (element) {
+  if (!this.h[element]) return;
+  this.size -= 1;
+  this.h[element] -= 1;
+};
+
+MultiSet.prototype.clear = function () {
+  this.size = 0;
+  this.h = {};
+};
+
+function find(words, s) {
+  var wordset = new Set(words);
+  var wordmset = new MultiSet(words);
+  var used = new MultiSet();
+  var result = [];
+  var i = 0;
+  while (i !== s.length) {
+    if (wordset.has(s[i]) && used.has(s[i]) !== wordmset.has(s[i])) {
+      used.add(s[i]);
+      if (used.size === wordmset.size) {
+        result.push(i - wordmset.size + 1);
+        used.delete(s[i - wordmset.size + 1]);
+      }
+      i++;
+    } else if (!wordset.has(s[i])) {
+      used.clear();
+      i++;
+    } else {
+      for (var j = i - used.size; j < i && s[j] !== s[i]; j++) {
+        used.delete(s[j]);
+      }
+      // always be able to find s[j] === s[i];
+      used.delete(s[j]);
+    }
   }
   return result;
-};
+}
 
 /**
  * @param {string} s
@@ -19,37 +65,32 @@ String.prototype.hash = function () {
  */
 var findSubstring = function(s, words) {
   if (words.length === 0) return [];
-  var sl = s.length;
-  var wl = words[0].length;
-  var nw = words.length;
-
-  words.forEach(word => word.h = word.hash());
-  var T = 1;
-  for (var i = 0; i < s.length - 1; i++) T *= 26;
-  var h = s.substring(0, wl).hash();
-  var sh = [];
-  for (var i = wl; i < sl; i++) {
-    sh.push(h);
-    h = Math.floor((h / 26)) + s.charCodeAt(i) * T;
+  var wordlen = words[0].length;
+  var result = [];
+  for (var i = 0; i < wordlen; i++) {
+    var splits = [];
+    var j = i;
+    while (j + wordlen <= s.length) {
+      splits.push(s.substr(j, wordlen));
+      j += wordlen;
+    }
+    var splitsidx = find(words, splits);
+    result = result.concat(splitsidx.map(idx => idx*wordlen + i));
   }
-
-  var wordsHashSum = 0;
-  words.forEach(word => wordsHashSum = (wordsHashSum + word.h) % M1);
-  var hashSum = [];
-  for (var t = 0; t < wl; t++) {
-    var currSum = 0;
-    if (t + (nw-1) * wl < sh.length) break;
-    for (var i = 0; i < nw; i++)
-      currSum = (currSum + sh[t + i*wl]) % M1;
-    i = t + nw * wl;
-    while (9 )
-  }
+  return result;
 };
 
 function test(f) {
 
   [
-    [[]]
+    ["barfoothefoobarman", ["foo", "bar"]],
+    ["aabb", ["aa", "bb"]],
+    ["aab", ["aa", "bb"]],
+    ["aaaa", ["aa", "aa"]],
+    ["aab", ["sadsdsdds"]],
+    require('./substring-with-concatenation-of-all-words.in1.js'),
+    ["wordgoodgoodgoodbestword", ["word","good","best","good"]],
+    ["aawordgoodgoodgoodbestword", ["word","good","best","good"]]
   ].forEach(function (input) {
     console.log(f.apply(undefined, input));
   });
